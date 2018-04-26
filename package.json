@@ -1,0 +1,26 @@
+{
+  "name": "crime-trend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "chart.js": "^1.1.1",
+    "chartjs": "^0.3.24",
+    "react": "^16.3.2",
+    "react-chartjs": "^1.2.0",
+    "react-dom": "^16.3.2",
+    "react-google-maps": "^9.4.5",
+    "react-places-autocomplete": "^7.0.1",
+    "react-router-dom": "^4.2.2",
+    "react-scripts": "1.1.4",
+    "recompose": "^0.27.0",
+    "semantic-ui-less": "^2.3.1",
+    "soda-js": "^0.2.3",
+    "styled-components": "^3.2.6"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}

@@ -1,18 +1,13 @@
 import React, { Component } from 'react';
-import Line from 'react-chartjs/lib/line';
 import styled from 'styled-components';
+import qs from 'qs';
+import {
+    withRouter,
+} from 'react-router-dom';
 import PlacesAutoComplete from '../components/PlacesAutoComplete';
-import GoogleMap from '../components/GoogleMapWithMarker';
-import google from '../utils/googleGlobal';
-import {getIncidentsRadius} from "../utils/incidentsApi";
-import normalizeByYears from "../utils/normalizeByYears";
-
-const { maps } = google;
-// init with jackvile map
-const initialBounds = new maps.LatLngBounds(
-    new maps.LatLng(34.818942,-92.1850488),
-    new maps.LatLng(34.9287199, -92.074074)
-);
+import initialBounds from '../utils/cityBounds';
+import searchIcon from './assets/search.png';
+import {searchStateFromQueryString} from '../utils/searchStateFromQueryString';
 
 const searchOptions = {
     bounds: initialBounds,
@@ -21,69 +16,107 @@ const searchOptions = {
     componentRestrictions: {country: 'us'}
 };
 
-const PlotWrapper = styled.div`
-  width: 300px;
-  height: 300px;
-  margin: 10px auto 0 auto;  
+const SearchWrapper = styled.div`
+  position: relative;
+  margin-top: 50px;
 `;
 
-const makeChartData = (incidentsByYears) => {
-        const years = Object.keys(incidentsByYears).sort();
-        return {
-            labels: years,
-            datasets: [
-                {
-                    label: 'Incidents by years',
-                    data: years.map((k) => incidentsByYears[k].length),
-                    fillColor: "rgba(151,187,205,0.5)",
-                    strokeColor: "rgba(151,187,205,0.8)",
-                    highlightFill: "rgba(151,187,205,0.75)",
-                    highlightStroke: "rgba(151,187,205,1)",
-                }
+const SubmitButton = styled.button`
+    width: 21px;
+    height: 21px;
+    position: absolute;
+    top: 17px;
+    right: 50px;
+    content: "";
+    z-index: 1; 
+    background: url(${searchIcon});
+    border: 0;
+    outline: none;
+    cursor: pointer;
+`;
 
-            ]
-    };
-};
+const SubmitCTAButton = styled.div`
+    width: 100px;
+    height: 50px;     
+    background-color: darkgreen;
+    color: #fff;    
+    border: 0;
+    outline: none;
+    cursor: pointer;
+    margin: 16px auto;
+    line-height: 50px;
+    text-align: center;
+    border-radius: 8px;
+`;
+
+const updateAfter = 400;
+
+const searchStateToUrl = (path,searchState)=>
+    searchState ? `${path}?${qs.stringify(searchState)}` : '';
 
 class SearchPage extends Component {
-    state = {
-        bounds: null,
-        incidents: [],
-        incidentsByYears: null
-    };
+
+    constructor(props){
+        super(props);
+        this.state = {
+            searchState: searchStateFromQueryString(props.location.search)
+        };
+    }
 
     render(){
-        const {bounds = null, incidents, chartData} = this.state;
+        const { searchState: { q} } = this.state;
         return (
-            <div>
-                <PlacesAutoComplete
-                    searchOptions={searchOptions}
-                    onSelectionChange={this._onSelectionChange} />
-                <GoogleMap
-                    initialBounds={initialBounds}
-                    ref={(r) => this.map = r}
-                    bounds={bounds}
-                    incidents={incidents}
-                    containerElement={<div style={{height: `400px`}}/>}
-                    mapElement={<div style={{height: `100%`}}/>}
-                />
-                {chartData ? <PlotWrapper><Line data={chartData} /></PlotWrapper>: null }
-            </div>
+            <SearchWrapper>
+                <form noValidate role="search" onSubmit={this._onSubmit}>
+                    <PlacesAutoComplete
+                        initialSearch={q}
+                        placeHolder={'Please enter an Address, Neighborhood, City, Zip'}
+                        searchOptions={searchOptions}
+                        onSelectionChange={this._onSelectionChange} />
+                    <SubmitButton type="submit" title="click here to submit" />
+                </form>
+                <SubmitCTAButton onClick={this._onSubmit}>Submit</SubmitCTAButton>
+            </SearchWrapper>
         );
     }
 
-    _onSelectionChange = ({ geometry: { bounds } }) => {
-        console.log(bounds.getCenter().lat(),bounds.getCenter().lng());
-        this.map.fitBounds(bounds);
-        getIncidentsRadius(bounds.getCenter(),500).then((incidents) => {
-            const incidentsByYears = normalizeByYears(incidents);
-            const chartData = makeChartData(incidentsByYears);
-            this.setState({bounds, incidents, chartData});
-        });
+    _onSubmit = (event) => {
+        event.preventDefault();
+        const {history} = this.props;
+        const {searchState} = this.state;
+        const href = searchStateToUrl('/crime-trend',searchState);
+        history.push(href, href);
+    };
 
+    componentWillUnmount(){
+        clearTimeout(this.debouncedSetState);
+    }
+
+    _onSelectionChange = ({ formatted_address, geometry: { bounds } }) => {
+        const {history} = this.props;
+        const center = bounds.getCenter();
+        var ne = bounds.getNorthEast();
+        var sw = bounds.getSouthWest();
+        const searchState = {
+            lat: center.lat(),
+            lng: center.lng(),
+            ne_lat: ne.lat(),
+            ne_lng: ne.lng(),
+            sw_lat: sw.lat(),
+            sw_lng: sw.lng(),
+            q: formatted_address
+        };
+        clearTimeout(this.debouncedSetState);
+        this.debouncedSetState = setTimeout(() => {
+            const href = searchStateToUrl(window.location.pathname,searchState);
+            history.push(href, href, {
+                shallow: true,
+            });
+        }, updateAfter);
+        this.setState({searchState});
     }
 
 }
 
 
-export default SearchPage;
+export default withRouter(SearchPage);

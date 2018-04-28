@@ -44,7 +44,6 @@ class GoogleMapEl extends PureComponent{
                 defaultMapTypeId={'hybrid'}
                 ref={(r) => {this._map = r; innerRef(r)}}
                 defaultZoom={getBoundsZoomLevel(bounds, this._map)}
-                defaultCenter={initialBounds.getCenter()}
             >
                 {initialBounds ? <Rectangle bounds={initialBounds} /> : null }
                 {bounds ? <Circle center={bounds.getCenter()}
@@ -78,7 +77,10 @@ class GoogleMapWithMarker extends Component {
     }
 
     fitBounds(bounds){
-        this._map && this._map.fitBounds(bounds);
+        if(this._map){
+            this._map.fitBounds(bounds);
+        }
+
     }
 
     render(){

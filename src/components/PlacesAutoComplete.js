@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { withState, compose, withHandlers } from 'recompose';
 import PlacesAutocomplete, { geocodeByAddress } from 'react-places-autocomplete'
 
-const withAddressState = withState('address', 'setAddress', '');
+const withAddressState = withState('address', 'setAddress', ({initialSearch}) => (initialSearch || ''));
 
 const withPlaceSearchHandler = withHandlers({
     getGLocationByAddress: ({ onSelectionChange }) => async (address)=> {
@@ -27,7 +27,7 @@ const SearchWrapper = styled.div`
   position: relative;
 `;
 
-const PlacesAutoComplete = ({ address, setAddress, getGLocationByAddress, searchOptions }) => {
+const PlacesAutoComplete = ({ address, setAddress, getGLocationByAddress, searchOptions, placeHolder }) => {
     return (
         <PlacesAutocomplete
             value={address}
@@ -39,8 +39,8 @@ const PlacesAutoComplete = ({ address, setAddress, getGLocationByAddress, search
                 <SearchWrapper >
                     <input
                         {...getInputProps({
-                            placeholder: 'Search Places ...',
-                            className: 'location-search-input'
+                            placeholder: placeHolder || 'Search Places ...',
+                            className: 'location-search-input',
                         })}
                     />
                     <div className="autocomplete-dropdown-container">
